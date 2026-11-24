@@ -1,0 +1,20 @@
+{
+  "name": "outingmate",
+  "version": "1.0.0",
+  "private": true,
+  "description": "OutingMate - AI-powered group outing planner from WhatsApp chats",
+  "workspaces": [
+    "apps/api",
+    "apps/web"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspaces",
+    "dev:api": "npm run dev --workspace=apps/api",
+    "dev:web": "npm run dev --workspace=apps/web",
+    "build": "npm run build --workspaces",
+    "test": "npm run test --workspaces"
+  },
+  "keywords": ["whatsapp", "ai", "outing", "planner", "gemini", "sarvam"],
+  "author": "",
+  "license": "MIT"
+}

@@ -1,0 +1,16 @@
+24/11/2026, 14:00 - Messages and calls are end-to-end encrypted. No one outside of this chat, not even WhatsApp, can read or listen to them.
+24/11/2026, 14:05 - Priya: Hey everyone! It's been so long since our college group met up. How about a weekend trip to Pondicherry?
+24/11/2026, 14:06 - Rahul: Pondicherry sounds perfect! The French Quarter cafes are lovely this time of the year.
+24/11/2026, 14:08 - Karthik: Count me in! I can bring my SUV, so 5 of us can easily travel by car together.
+24/11/2026, 14:10 - Ananya: Yay! What dates are we thinking? How about next weekend, Dec 5th and 6th?
+24/11/2026, 14:12 - Priya: Dec 5-6 works for me. We should leave early morning Saturday (around 5:30 AM) from Chennai to avoid toll traffic.
+24/11/2026, 14:15 - Vikram: I might have some office work on Friday evening, so Saturday morning 5:30 AM departure is great.
+24/11/2026, 14:18 - Rahul: What should our budget target be? Let's keep it under ₹2500 per head including stay and petrol.
+24/11/2026, 14:20 - Priya: ₹2500 per person is reasonable. We can split fuel and tolls equally.
+24/11/2026, 14:25 - Ananya: For activities, we must do:
+1. Promenade Beach evening walk
+2. Auroville Matrimandir viewpoint
+3. French colony bakery breakfast at Cafe des Arts
+24/11/2026, 14:28 - Karthik: Check out this villa near Serenity Beach: https://pondicherry-villa.example.com/booking
+24/11/2026, 14:30 - Priya: Villa looks awesome! Let's confirm by tomorrow evening so we can book rooms before they sell out.
+24/11/2026, 14:32 - Rahul: Task for Karthik: confirm villa rates. Task for me: car servicing.
