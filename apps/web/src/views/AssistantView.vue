@@ -131,15 +131,7 @@ const quickQuestions = [
   'What decisions still need votes?',
 ];
 
-const messages = ref<AssistantMessage[]>([
-  {
-    id: 'intro_1',
-    sessionId: `session_${workspaceId}`,
-    role: 'assistant',
-    content: "Hi! I'm OutingMate Assistant. I've analyzed your WhatsApp chat export and current outing plan. Ask me anything or tap the microphone to speak!",
-    createdAt: new Date().toISOString(),
-  },
-]);
+const messages = ref<AssistantMessage[]>([]);
 
 // Voice Recording state
 const isRecording = ref(false);
@@ -271,15 +263,10 @@ async function playAssistantAudio(text: string) {
     const res = await api.synthesizeSpeech(text);
     if (res.audioBase64) {
       const audio = new Audio(`data:audio/wav;base64,${res.audioBase64}`);
-      audio.play();
-    } else {
-      // Fallback to browser SpeechSynthesis
-      const utterance = new SpeechSynthesisUtterance(text);
-      window.speechSynthesis.speak(utterance);
+      await audio.play();
     }
-  } catch {
-    const utterance = new SpeechSynthesisUtterance(text);
-    window.speechSynthesis.speak(utterance);
+  } catch (err: any) {
+    alert(`Sarvam TTS error: ${err.message}`);
   }
 }
 </script>

@@ -10,7 +10,9 @@
     "isolatedModules": true,
     "esModuleInterop": true,
     "lib": ["ESNext", "DOM"],
+    "types": ["vite/client"],
     "skipLibCheck": true,
+    "noEmit": true,
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"]

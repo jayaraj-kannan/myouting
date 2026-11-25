@@ -4,7 +4,7 @@ export class ApiClient {
   private token: string | null = null;
 
   constructor() {
-    this.token = localStorage.getItem('outingmate_token') || 'demo-token';
+    this.token = localStorage.getItem('outingmate_token') || null;
   }
 
   setToken(token: string) {
@@ -119,6 +119,10 @@ export class ApiClient {
 
   getImportMessages(importId: string) {
     return this.request<{ messages: any[] }>(`/imports/${importId}/messages`);
+  }
+
+  getWorkspaceMessages(workspaceId: string) {
+    return this.request<{ messages: any[] }>(`/workspaces/${workspaceId}/messages`);
   }
 
   deleteImport(importId: string) {

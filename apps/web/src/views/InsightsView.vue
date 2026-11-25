@@ -212,8 +212,11 @@
           <button @click="showChatModal = false" class="text-slate-400 hover:text-slate-600 text-lg">✕</button>
         </div>
         <div class="p-5 overflow-y-auto space-y-3 flex-1 font-mono text-xs">
+          <div v-if="chatMessages.length === 0" class="text-center py-8 text-slate-400">
+            No messages found for this workspace.
+          </div>
           <div
-            v-for="msg in sampleChatMessages"
+            v-for="msg in chatMessages"
             :key="msg.messageId"
             class="p-2.5 rounded-xl border border-slate-100 bg-slate-50/70"
           >
@@ -249,18 +252,20 @@ const showChatModal = ref(false);
 
 const insights = computed(() => wsStore.currentInsights);
 
-const sampleChatMessages = ref([
-  { messageId: 'msg_1', senderLabel: 'Priya', text: "Hey everyone! How about a weekend trip to Pondicherry?" },
-  { messageId: 'msg_2', senderLabel: 'Rahul', text: "Pondicherry sounds perfect! The French Quarter cafes are lovely." },
-  { messageId: 'msg_3', senderLabel: 'Karthik', text: "Count me in! I can bring my SUV, so we travel by car together." },
-  { messageId: 'msg_4', senderLabel: 'Ananya', text: "How about next weekend, Dec 5th and 6th?" },
-  { messageId: 'msg_5', senderLabel: 'Rahul', text: "Let's keep budget around ₹2500 per head including stay and petrol." },
-  { messageId: 'msg_6', senderLabel: 'Ananya', text: "We must visit Promenade Beach and Cafe des Arts." },
-]);
+import { api } from '../services/api';
+import { NormalizedMessage } from '../types';
+
+const chatMessages = ref<NormalizedMessage[]>([]);
 
 onMounted(async () => {
   if (wsStore.activeWorkspace?.id !== workspaceId) {
     await wsStore.selectWorkspace(workspaceId);
+  }
+  try {
+    const res = await api.getWorkspaceMessages(workspaceId);
+    chatMessages.value = res.messages || [];
+  } catch (err) {
+    console.error('Failed to load messages', err);
   }
 });
 

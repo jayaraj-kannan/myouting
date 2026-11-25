@@ -167,6 +167,18 @@ importsRouter.get('/imports/:id/messages', authenticate, (req, res) => {
   res.json({ messages });
 });
 
+// GET /workspaces/:id/messages
+importsRouter.get('/workspaces/:id/messages', authenticate, (req, res) => {
+  const workspaceId = req.params.id as string;
+  const imports = Array.from(store.imports.values()).filter(i => i.workspaceId === workspaceId);
+  const allMessages: any[] = [];
+  for (const imp of imports) {
+    const msgs = store.messages.get(imp.id) || [];
+    allMessages.push(...msgs);
+  }
+  res.json({ messages: allMessages });
+});
+
 // POST /imports/:id/process
 importsRouter.post('/imports/:id/process', authenticate, async (req, res, next) => {
   try {

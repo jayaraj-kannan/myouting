@@ -10,7 +10,7 @@
     </div>
 
     <!-- Phone OTP Login Form -->
-    <div v-if="mode === 'phone'" class="space-y-4">
+    <div class="space-y-4">
       <div v-if="!otpSent">
         <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
           Phone Number
@@ -27,12 +27,15 @@
             class="flex-1 rounded-r-lg border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
           />
         </div>
+
+        <div id="recaptcha-container" class="mt-3"></div>
+
         <button
           @click="sendOtp"
-          :disabled="!isValidPhone"
+          :disabled="!isValidPhone || loading"
           class="w-full mt-4 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 px-4 rounded-xl text-sm transition shadow-sm disabled:opacity-50"
         >
-          Send Verification OTP
+          {{ loading ? 'Sending...' : 'Send Verification OTP' }}
         </button>
       </div>
 
@@ -43,15 +46,16 @@
         <input
           v-model="otpCode"
           type="text"
-          placeholder="123456"
+          placeholder="Enter 6-digit OTP"
           maxlength="6"
           class="w-full text-center tracking-widest text-xl font-bold rounded-lg border border-slate-300 py-2.5 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
         />
         <button
           @click="verifyOtp"
-          class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 px-4 rounded-xl text-sm transition shadow-sm"
+          :disabled="loading || otpCode.trim().length !== 6"
+          class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 px-4 rounded-xl text-sm transition shadow-sm disabled:opacity-50"
         >
-          Verify & Sign In
+          {{ loading ? 'Verifying...' : 'Verify & Sign In' }}
         </button>
       </div>
     </div>
@@ -66,18 +70,12 @@
       </div>
     </div>
 
-    <!-- Fast Demo Login (Recommended for testing) -->
+    <!-- Google Sign-In -->
     <div class="space-y-3">
       <button
-        @click="loginWithDemo"
-        class="w-full flex items-center justify-center space-x-2 border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-medium py-2.5 px-4 rounded-xl text-sm transition"
-      >
-        <span>⚡ Quick Demo Organizer Sign-In</span>
-      </button>
-
-      <button
         @click="loginWithGoogle"
-        class="w-full flex items-center justify-center space-x-2 border border-slate-200 hover:bg-slate-50 text-slate-700 font-medium py-2.5 px-4 rounded-xl text-sm transition"
+        :disabled="loading"
+        class="w-full flex items-center justify-center space-x-2 border border-slate-200 hover:bg-slate-50 text-slate-700 font-medium py-2.5 px-4 rounded-xl text-sm transition disabled:opacity-50"
       >
         <span>🌐 Sign in with Google</span>
       </button>
@@ -95,39 +93,80 @@ import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 import { useWorkspaceStore } from '../stores/workspace';
+import {
+  auth,
+  googleProvider,
+  signInWithPopup,
+  signInWithPhoneNumber,
+  RecaptchaVerifier,
+} from '../services/firebase';
 
 const authStore = useAuthStore();
 const wsStore = useWorkspaceStore();
 const router = useRouter();
 
-const mode = ref<'phone' | 'google'>('phone');
 const phoneNumber = ref('');
 const otpSent = ref(false);
 const otpCode = ref('');
+const loading = ref(false);
+let confirmationResult: any = null;
+let recaptchaVerifier: RecaptchaVerifier | null = null;
 
 const isValidPhone = computed(() => phoneNumber.value.trim().length === 10);
 
-function sendOtp() {
+function getOrCreateRecaptcha() {
+  if (!recaptchaVerifier) {
+    recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+      size: 'invisible',
+    });
+  }
+  return recaptchaVerifier;
+}
+
+async function sendOtp() {
   if (!isValidPhone.value) return;
-  otpSent.value = true;
-  otpCode.value = '123456'; // Pre-filled for seamless testing
+  try {
+    loading.value = true;
+    const verifier = getOrCreateRecaptcha();
+    confirmationResult = await signInWithPhoneNumber(auth, `+91${phoneNumber.value.trim()}`, verifier);
+    otpSent.value = true;
+  } catch (err: any) {
+    alert(`Failed to send OTP: ${err.message}`);
+  } finally {
+    loading.value = false;
+  }
 }
 
 async function verifyOtp() {
-  authStore.loginPhone(phoneNumber.value);
-  await wsStore.loadWorkspaces();
-  router.push('/');
-}
-
-async function loginWithDemo() {
-  authStore.loginDemo('Alex (Organizer)');
-  await wsStore.loadWorkspaces();
-  router.push('/');
+  if (!confirmationResult || otpCode.value.trim().length !== 6) return;
+  try {
+    loading.value = true;
+    const userCredential = await confirmationResult.confirm(otpCode.value.trim());
+    const idToken = await userCredential.user.getIdToken();
+    localStorage.setItem('outingmate_token', idToken);
+    await authStore.fetchUser();
+    await wsStore.loadWorkspaces();
+    router.push('/');
+  } catch (err: any) {
+    alert(`OTP verification failed: ${err.message}`);
+  } finally {
+    loading.value = false;
+  }
 }
 
 async function loginWithGoogle() {
-  authStore.loginDemo('Google User (Demo)');
-  await wsStore.loadWorkspaces();
-  router.push('/');
+  try {
+    loading.value = true;
+    const userCredential = await signInWithPopup(auth, googleProvider);
+    const idToken = await userCredential.user.getIdToken();
+    localStorage.setItem('outingmate_token', idToken);
+    await authStore.fetchUser();
+    await wsStore.loadWorkspaces();
+    router.push('/');
+  } catch (err: any) {
+    alert(`Google sign-in error: ${err.message}`);
+  } finally {
+    loading.value = false;
+  }
 }
 </script>

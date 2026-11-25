@@ -2,59 +2,54 @@ import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { UserProfile } from '../types';
 import { api } from '../services/api';
+import { auth, onAuthStateChanged, signOut, FirebaseUser } from '../services/firebase';
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<UserProfile | null>(null);
-  const token = ref<string | null>(localStorage.getItem('outingmate_token') || 'demo-token');
+  const token = ref<string | null>(localStorage.getItem('outingmate_token') || null);
   const isAuthenticated = ref<boolean>(!!token.value);
   const loading = ref<boolean>(false);
 
+  // Initialize Firebase Auth listener
+  onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
+    if (firebaseUser) {
+      try {
+        const idToken = await firebaseUser.getIdToken();
+        token.value = idToken;
+        api.setToken(idToken);
+        isAuthenticated.value = true;
+        await fetchUser();
+      } catch (err) {
+        console.error('Error refreshing Firebase token:', err);
+      }
+    } else {
+      token.value = null;
+      user.value = null;
+      isAuthenticated.value = false;
+      api.clearToken();
+    }
+  });
+
   async function fetchUser() {
+    if (!token.value) return;
     try {
       loading.value = true;
       const res = await api.getMe();
       user.value = res.user;
       isAuthenticated.value = true;
-    } catch {
-      // If error, keep default demo user
-      user.value = {
-        userId: 'usr_demo_1',
-        displayName: 'Alex (Organizer)',
-        email: 'alex@outingmate.app',
-        preferredLanguage: 'en-IN',
-      };
-      isAuthenticated.value = true;
+    } catch (err) {
+      console.error('Error fetching user profile:', err);
     } finally {
       loading.value = false;
     }
   }
 
-  function loginDemo(name = 'Alex (Organizer)') {
-    token.value = 'demo-token';
-    api.setToken('demo-token');
-    user.value = {
-      userId: 'usr_demo_1',
-      displayName: name,
-      email: 'alex@outingmate.app',
-      preferredLanguage: 'en-IN',
-    };
-    isAuthenticated.value = true;
-  }
-
-  function loginPhone(phoneNumber: string) {
-    const userId = `usr_${Date.now()}`;
-    token.value = userId;
-    api.setToken(userId);
-    user.value = {
-      userId,
-      displayName: `User (${phoneNumber.slice(-4)})`,
-      phoneNumber,
-      preferredLanguage: 'en-IN',
-    };
-    isAuthenticated.value = true;
-  }
-
-  function logout() {
+  async function logout() {
+    try {
+      await signOut(auth);
+    } catch (err) {
+      console.error('Error signing out:', err);
+    }
     token.value = null;
     user.value = null;
     isAuthenticated.value = false;
@@ -67,8 +62,6 @@ export const useAuthStore = defineStore('auth', () => {
     isAuthenticated,
     loading,
     fetchUser,
-    loginDemo,
-    loginPhone,
     logout,
   };
 });
