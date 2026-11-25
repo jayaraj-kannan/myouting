@@ -1,4 +1,9 @@
 import dotenv from 'dotenv';
+import path from 'path';
+
+// Load root .env first, then local .env to allow overrides
+dotenv.config({ path: path.resolve(__dirname, '../../../../.env') });
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 dotenv.config();
 
 export const config = {
