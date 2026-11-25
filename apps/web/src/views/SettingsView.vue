@@ -37,25 +37,6 @@
         </button>
       </div>
 
-      <!-- Feature Flags & Experiment Cohort (Flagsmith) -->
-      <div class="space-y-3 pb-6 border-b border-slate-100">
-        <div class="flex items-center justify-between">
-          <h2 class="text-xs font-bold text-slate-700 uppercase tracking-wider">Flagsmith Feature Flags</h2>
-          <span class="text-[10px] font-bold bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full">Active</span>
-        </div>
-        <div class="space-y-2 text-xs">
-          <div
-            v-for="(val, key) in wsStore.featureFlags"
-            :key="key"
-            class="flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-100"
-          >
-            <span class="font-mono text-slate-700">{{ key }}</span>
-            <span :class="val ? 'text-emerald-700 font-bold' : 'text-slate-400'">
-              {{ val ? 'Enabled ✓' : 'Disabled' }}
-            </span>
-          </div>
-        </div>
-      </div>
 
       <!-- Privacy & Data Governance (Section 10) -->
       <div class="space-y-3 pb-6 border-b border-slate-100">
