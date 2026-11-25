@@ -17,7 +17,10 @@ export const config = {
     projectId: process.env.FIREBASE_PROJECT_ID || '',
     clientEmail: process.env.FIREBASE_CLIENT_EMAIL || '',
     privateKey: (process.env.FIREBASE_PRIVATE_KEY || '').replace(/\\n/g, '\n'),
-    useMock: process.env.USE_MOCK_FIREBASE === 'true' || !process.env.FIREBASE_PROJECT_ID,
+    useMock:
+      process.env.USE_MOCK_FIREBASE === 'true' ||
+      !process.env.FIREBASE_PROJECT_ID ||
+      !(process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_PRIVATE_KEY.includes('BEGIN PRIVATE KEY')),
   },
 
   // Gemini AI
