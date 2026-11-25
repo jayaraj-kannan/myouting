@@ -196,6 +196,35 @@ importsRouter.post('/imports/:id/process', authenticate, async (req, res, next) 
     record.status = 'completed';
     record.updatedAt = new Date().toISOString();
 
+    // Map chat participants/senders directly into workspace members for this outing
+    const ws = store.workspaces.get(record.workspaceId);
+    if (ws) {
+      if (insights.destination?.value && !ws.destination) {
+        ws.destination = insights.destination.value;
+      }
+      if (insights.budget?.value?.amount && !ws.estimatedBudget) {
+        ws.estimatedBudget = insights.budget.value.amount;
+      }
+
+      const senders = Array.from(
+        new Set(messages.filter(m => m.senderLabel && m.senderLabel !== 'System').map(m => m.senderLabel))
+      );
+      for (const sender of senders) {
+        if (!ws.members.some(m => m.displayName.toLowerCase() === sender.toLowerCase())) {
+          ws.members.push({
+            userId: `usr_chat_${Math.random().toString(36).substring(2, 8)}`,
+            displayName: sender,
+            role: 'member',
+            joinedAt: new Date().toISOString(),
+          });
+        }
+      }
+
+      ws.groupSize = ws.members.length;
+      ws.updatedAt = new Date().toISOString();
+      store.workspaces.set(record.workspaceId, ws);
+    }
+
     res.json({ success: true, insights });
   } catch (err) {
     next(err);
