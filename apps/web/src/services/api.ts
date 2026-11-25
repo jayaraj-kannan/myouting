@@ -106,6 +106,21 @@ export class ApiClient {
   }
 
   // Imports
+  importDirectChat(formData: FormData) {
+    return this.request<{
+      success: boolean;
+      workspace: any;
+      insights: any;
+      plan: any;
+      summaryText: string;
+      audioBase64: string | null;
+      audioFormat: string;
+    }>('/imports/direct', {
+      method: 'POST',
+      body: formData,
+    });
+  }
+
   uploadChat(workspaceId: string, formData: FormData) {
     return this.request<{ import: any; messageCount: number; summary: any }>(`/workspaces/${workspaceId}/imports`, {
       method: 'POST',

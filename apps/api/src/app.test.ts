@@ -3,6 +3,7 @@ import request from 'supertest';
 import { createApp } from './app';
 import { auth } from './services/firebase';
 import { GeminiAiProvider } from './providers/gemini-provider';
+import { SarvamSpeechProvider } from './providers/speech-provider';
 
 // Spy on Firebase Auth verification for tests
 vi.spyOn(auth, 'verifyIdToken').mockResolvedValue({
@@ -62,6 +63,15 @@ vi.spyOn(GeminiAiProvider.prototype, 'generatePlan').mockResolvedValue({
   ownerId: 'usr_alex',
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
+});
+
+vi.spyOn(GeminiAiProvider.prototype, 'generateVoiceSummary').mockResolvedValue(
+  'Here is your Pondicherry outing plan! Budget is 2500 rupees per person.'
+);
+
+vi.spyOn(SarvamSpeechProvider.prototype, 'synthesize').mockResolvedValue({
+  audioBase64: 'UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=',
+  format: 'wav',
 });
 
 vi.spyOn(GeminiAiProvider.prototype, 'chatWithAssistant').mockResolvedValue({
@@ -178,5 +188,23 @@ describe('OutingMate API Integration Tests', () => {
 
     expect(voteRes.status).toBe(200);
     expect(voteRes.body.poll.options[0].votes).toContain('usr_alex');
+  });
+
+  it('POST /api/v1/imports/direct creates an outing directly from WhatsApp chat without pre-existing workspace', async () => {
+    const rawChat = `24/11/2026, 14:00 - Priya: Let's go to Pondicherry next weekend!
+24/11/2026, 14:05 - Rahul: Great idea, budget ₹2500 per head.`;
+
+    const res = await request(app)
+      .post('/api/v1/imports/direct')
+      .set('Authorization', 'Bearer valid_test_token')
+      .field('text', rawChat);
+
+    expect(res.status).toBe(201);
+    expect(res.body.success).toBe(true);
+    expect(res.body.workspace).toBeDefined();
+    expect(res.body.workspace.title).toContain('Pondicherry');
+    expect(res.body.summaryText).toBeDefined();
+    expect(res.body.plan).toBeDefined();
+    expect(res.body.workspace.members.some((m: any) => m.displayName === 'Priya')).toBe(true);
   });
 });

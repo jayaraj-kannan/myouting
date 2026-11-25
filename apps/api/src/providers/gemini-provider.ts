@@ -9,6 +9,7 @@ import { OUTING_EXTRACTION_SYSTEM_PROMPT, PLAN_GENERATION_SYSTEM_PROMPT, ASSISTA
 export interface AiProvider {
   extractInsights(messages: NormalizedMessage[]): Promise<ExtractedInsights>;
   generatePlan(workspaceId: string, insights: ExtractedInsights, ownerId: string): Promise<OutingPlan>;
+  generateVoiceSummary(insights: ExtractedInsights, plan: OutingPlan): Promise<string>;
   regenerateSection(plan: OutingPlan, section: string, prompt?: string): Promise<any>;
   chatWithAssistant(
     history: Array<{ role: 'user' | 'assistant'; content: string }>,
@@ -141,6 +142,48 @@ export class GeminiAiProvider implements AiProvider {
       logger.error({ err }, 'Gemini plan generation API call failed');
       throw new ApiError(500, 'GEMINI_PLAN_GENERATION_FAILED', `Gemini plan generation failed: ${err.message}`);
     }
+  }
+
+  async generateVoiceSummary(insights: ExtractedInsights, plan: OutingPlan): Promise<string> {
+    try {
+      const model = this.genAI.getGenerativeModel({
+        model: config.gemini.model,
+        generationConfig: {
+          temperature: 0.3,
+          maxOutputTokens: 250,
+        },
+      });
+
+      const prompt = `You are OutingMate AI. Generate a concise, spoken-friendly audio summary of this group outing plan for text-to-speech audio playback.
+The summary MUST be under 450 characters so it can be spoken smoothly in 20-25 seconds.
+Tone: enthusiastic, clear, organized.
+Highlight: destination, dates or duration, budget per person, group size, and top 2-3 planned activities.
+
+Details:
+Destination: ${plan.destination.name}
+Dates: ${plan.dates.startDate ? `${plan.dates.startDate} to ${plan.dates.endDate}` : 'Upcoming weekend'}
+Budget: ₹${plan.budget.estimatedPerPerson} per person
+Transport: ${plan.transportation.mode}
+Activities: ${plan.activities.map(a => a.title).slice(0, 3).join(', ')}
+Original Chat Summary: ${insights.summary}
+
+Output only the spoken text without headers, asterisks, bullet points, or markdown.`;
+
+      const result = await model.generateContent(prompt);
+      const text = result.response.text().trim();
+      if (text) {
+        return text.replace(/[*#_`]/g, '').substring(0, 480);
+      }
+    } catch (err) {
+      logger.warn({ err }, 'Gemini voice summary generation error, falling back to structured template');
+    }
+
+    const dest = plan.destination.name;
+    const budget = plan.budget.estimatedPerPerson;
+    const transport = plan.transportation.mode || 'vehicle';
+    const acts = plan.activities.map(a => a.title).slice(0, 2).join(' and ');
+    const count = plan.budget.estimatedTotal && budget ? Math.round(plan.budget.estimatedTotal / budget) : 4;
+    return `Here is your ${dest} outing plan! The group has agreed on an outing with an estimated budget of ${budget} rupees per person for ${count} people traveling by ${transport}.${acts ? ` Planned activities include ${acts}.` : ''} All decisions and tasks are organized in your dashboard.`;
   }
 
   async regenerateSection(plan: OutingPlan, section: string, prompt?: string): Promise<any> {
